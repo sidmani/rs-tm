@@ -26,17 +26,19 @@ impl Rule {
     }
 }
 
+pub enum Next {
+    Halt,
+    Continue(u64, usize)
+}
+
 pub struct Machine {
     pub rules: Vec<Rule>,
     pub init_state: u64,
     pub init_loc: usize,
     pub blank_char: u64,
-    pub halting_states: HashSet<u64>,
 }
 
-type Rulemap<'a> = HashMap<(u64, u64), &'a Rule>;
-
-fn build_rulemap(rules: &Vec<Rule>) -> Rulemap {
+fn build_rulemap(rules: &Vec<Rule>) -> HashMap<(u64, u64), &Rule> {
     let mut rulemap = HashMap::new();
     for rule in rules {
         rulemap.insert((rule.init_state, rule.init_char), rule);
@@ -49,9 +51,9 @@ fn apply_rule(
     state: u64,
     tape: &mut Vec<u64>,
     loc: usize,
-    rulemap: &Rulemap,
+    rulemap: &HashMap<(u64, u64), &Rule>,
     blank_char: u64,
-) -> (u64, usize) {
+) -> Next {
     let (new_state, new_loc): (u64, usize);
     match rulemap.get(&(state, tape[loc])) {
         Some(rule) => {
@@ -85,22 +87,20 @@ fn apply_rule(
                         new_loc = loc - 2;
                     }
                 }
-                Direction::None => {
-                    new_loc = loc;
-                }
+                Direction::None => new_loc = loc,
             }
 
             for _ in tape.len() - 1..new_loc {
                 tape.push(blank_char);
             }
         }
-        None => panic!("no rule applicable"),
+        None => return Next::Halt
     }
 
-    (new_state, new_loc)
+    Next::Continue(new_state, new_loc)
 }
 
-pub fn fold_idx(pos: usize, len: usize) -> usize {
+fn fold_idx(pos: usize, len: usize) -> usize {
     let center = len / 2;
     if pos < center {
         return (center - pos) * 2 - 1;
@@ -109,7 +109,7 @@ pub fn fold_idx(pos: usize, len: usize) -> usize {
     }
 }
 
-pub fn unfold_idx(pos: usize, len: usize) -> usize {
+fn unfold_idx(pos: usize, len: usize) -> usize {
     let center = len / 2;
     if pos % 2 == 0 {
         return pos / 2 + center;
@@ -117,7 +117,7 @@ pub fn unfold_idx(pos: usize, len: usize) -> usize {
     return center - (pos + 1) / 2;
 }
 
-pub fn fold(tape: &Vec<u64>) -> Vec<u64> {
+fn fold(tape: &Vec<u64>) -> Vec<u64> {
     let mut new_tape: Vec<u64> = Vec::new();
     for i in 0..tape.len() {
         new_tape.push(tape[unfold_idx(i, tape.len())])
@@ -126,7 +126,7 @@ pub fn fold(tape: &Vec<u64>) -> Vec<u64> {
     new_tape
 }
 
-pub fn unfold(tape: &Vec<u64>) -> Vec<u64> {
+fn unfold(tape: &Vec<u64>) -> Vec<u64> {
     let mut new_tape: Vec<u64> = Vec::new();
     for i in 0..tape.len() {
         new_tape.push(tape[fold_idx(i, tape.len())]);
@@ -139,7 +139,6 @@ pub fn print_state(state: u64, tape: &Vec<u64>, loc: usize) {
     let mut text = format!("\x1b[92m[{}]\x1b[0m", state);
     for i in 0..tape.len() {
         if i == loc {
-            // string += f" \033[91m\033[1m{c}\033[0m"
             text = format!("{} \x1b[91m\x1b[1m{}\x1b[0m", text, tape[i]);
         } else {
             text = format!("{} {}", text, tape[i]);
@@ -162,19 +161,20 @@ pub fn run(machine: Machine, init_tape: Option<Vec<u64>>) {
         }
         None => {
             tape = Vec::new();
-            // will fail if loc not zero
+            // TODO: will fail if loc not zero
             loc = machine.init_loc
         }
     }
 
-    // println!("[{}] {:?}", state, unfold(&tape));
     print_state(state, &unfold(&tape), unfold_idx(loc, tape.len()));
     loop {
-        if machine.halting_states.contains(&state) {
-            break;
+        match apply_rule(state, &mut tape, loc, &rulemap, machine.blank_char) {
+            Next::Halt => break,
+            Next::Continue(new_state, new_loc) => {
+                state = new_state;
+                loc = new_loc;
+            } 
         }
-
-        (state, loc) = apply_rule(state, &mut tape, loc, &rulemap, machine.blank_char);
         print_state(state, &unfold(&tape), unfold_idx(loc, tape.len()));
     }
 }

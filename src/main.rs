@@ -36,14 +36,10 @@ fn main() {
         Rule::from(5, 0, 6, 0, Direction::None),
     ];
 
-    let mut halting_states: HashSet<u64> = HashSet::new();
-    halting_states.insert(6);
-
     let m = machine::Machine {
         rules: rules,
         init_state: 0,
         init_loc: 0,
-        halting_states: halting_states,
         blank_char: 3
     };
 
