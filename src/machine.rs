@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 pub enum Direction {
     Left,
@@ -28,30 +28,37 @@ impl Rule {
 
 pub enum Next {
     Halt,
-    Continue(u64, usize)
+    Continue(u64, usize),
 }
 
 pub struct Machine {
-    pub rules: Vec<Rule>,
     pub init_state: u64,
     pub init_loc: usize,
     pub blank_char: u64,
+    rulemap: HashMap<(u64, u64), Rule>,
 }
 
-fn build_rulemap(rules: &Vec<Rule>) -> HashMap<(u64, u64), &Rule> {
-    let mut rulemap = HashMap::new();
-    for rule in rules {
-        rulemap.insert((rule.init_state, rule.init_char), rule);
-    }
+impl Machine {
+    pub fn new(rules: Vec<Rule>, init_state: u64, init_loc: usize, blank_char: u64) -> Machine {
+        let mut rulemap = HashMap::new();
+        for rule in rules {
+            rulemap.insert((rule.init_state, rule.init_char), rule);
+        }
 
-    rulemap
+        Machine {
+            init_state,
+            init_loc,
+            blank_char,
+            rulemap,
+        }
+    }
 }
 
 fn apply_rule(
     state: u64,
     tape: &mut Vec<u64>,
     loc: usize,
-    rulemap: &HashMap<(u64, u64), &Rule>,
+    rulemap: &HashMap<(u64, u64), Rule>,
     blank_char: u64,
 ) -> Next {
     let (new_state, new_loc): (u64, usize);
@@ -94,7 +101,7 @@ fn apply_rule(
                 tape.push(blank_char);
             }
         }
-        None => return Next::Halt
+        None => return Next::Halt,
     }
 
     Next::Continue(new_state, new_loc)
@@ -148,8 +155,6 @@ pub fn print_state(state: u64, tape: &Vec<u64>, loc: usize) {
 }
 
 pub fn run(machine: Machine, init_tape: Option<Vec<u64>>) {
-    let rulemap = build_rulemap(&machine.rules);
-
     let mut state = machine.init_state;
     let mut tape: Vec<u64>;
     let mut loc: usize;
@@ -168,12 +173,12 @@ pub fn run(machine: Machine, init_tape: Option<Vec<u64>>) {
 
     print_state(state, &unfold(&tape), unfold_idx(loc, tape.len()));
     loop {
-        match apply_rule(state, &mut tape, loc, &rulemap, machine.blank_char) {
+        match apply_rule(state, &mut tape, loc, &machine.rulemap, machine.blank_char) {
             Next::Halt => break,
             Next::Continue(new_state, new_loc) => {
                 state = new_state;
                 loc = new_loc;
-            } 
+            }
         }
         print_state(state, &unfold(&tape), unfold_idx(loc, tape.len()));
     }

@@ -1,8 +1,5 @@
 mod machine;
-use std::collections::HashSet;
-
-use machine::Rule;
-use machine::Direction;
+use machine::{Direction, Machine, Rule};
 
 fn main() {
     // A, B, 1, 0, X, Y, Z
@@ -36,15 +33,9 @@ fn main() {
         Rule::from(5, 0, 6, 0, Direction::None),
     ];
 
-    let m = machine::Machine {
-        rules: rules,
-        init_state: 0,
-        init_loc: 0,
-        blank_char: 3
-    };
+    let m = Machine::new(rules, 0, 0, 3);
 
     let init_tape = vec![0, 2, 2, 2, 1];
 
     machine::run(m, Option::Some(init_tape));
-
 }
