@@ -36,5 +36,5 @@ fn main() {
     ];
 
     let init_tape = vec![3, 2, 2, 2, 1];
-    machine::run(&rules, Option::Some(init_tape));
+    machine::run(&rules, Option::Some(init_tape), true);
 }

@@ -14,7 +14,7 @@ pub fn is_reversible(rules: &Vec<Rule>) -> bool {
         }
     }
 
-    // check direction is the same for each state
+    // check direction is consistent for each state
     for state_rules in rules_by_terminal_state.values() {
         if state_rules.len() == 1 {
             continue;
