@@ -39,115 +39,111 @@ fn build_rulemap(rules: &Vec<Rule>) -> HashMap<(u64, u64), &Rule> {
 
 fn apply_rule(
     state: u64,
-    tape: &mut Vec<u64>,
-    loc: usize,
+    tape_l: &mut Vec<u64>,
+    tape_r: &mut Vec<u64>,
+    loc: (usize, bool),
     rulemap: &HashMap<(u64, u64), &Rule>,
-) -> Option<(u64, usize)> {
-    if let Some(rule) = rulemap.get(&(state, tape[loc])) {
-        let new_loc: usize;
-        let new_state = rule.final_state;
-        tape[loc] = rule.final_char;
+) -> Option<(u64, (usize, bool))> {
+    let curr_char: u64;
+    if loc.1 {
+        curr_char = tape_r[loc.0];
+    } else {
+        curr_char = tape_l[loc.0];
+    }
 
-        // get the new location
-        // negative indices are odd numbers (-1 = 1, -2 = 3...), positives are even
-        // zero is zero
+    if let Some(rule) = rulemap.get(&(state, curr_char)) {
+        let new_pos: usize;
+        let new_is_right_tape: bool;
+        let new_state = rule.final_state;
+
+        if loc.1 {
+            tape_r[loc.0] = rule.final_char;
+        } else {
+            tape_l[loc.0] = rule.final_char;
+        }
+
         match &rule.dir {
             Direction::Left => {
-                if loc % 2 == 1 {
-                    // we're in negative indices; move right by two
-                    new_loc = loc + 2;
-                } else if loc == 0 {
-                    new_loc = 1;
+                if loc.1 {
+                    if loc.0 == 0 {
+                        new_pos = 0;
+                        new_is_right_tape = false;
+                        if tape_l.len() == 0 {
+                            tape_l.push(0);
+                        }
+                    } else {
+                        new_pos = loc.0 - 1;
+                        new_is_right_tape = true;
+                    }
                 } else {
-                    // in positive (even) indices; move left by two
-                    new_loc = loc - 2;
+                    new_pos = loc.0 + 1;
+                    new_is_right_tape = false;
+                    if new_pos >= tape_l.len() {
+                        tape_l.push(0);
+                    }
                 }
             }
             Direction::Right => {
-                if loc % 2 == 0 {
-                    // zero or positives; move right by two
-                    new_loc = loc + 2;
-                } else if loc == 1 {
-                    // index 1 is tape -1, so go to index 0 (tape 0)
-                    new_loc = 0;
+                if loc.1 {
+                    new_pos = loc.0 + 1;
+                    new_is_right_tape = true;
+                    if new_pos >= tape_r.len() {
+                        tape_r.push(0);
+                    }
                 } else {
-                    // in negatives (3 or greater); move left by two
-                    new_loc = loc - 2;
+                    if loc.0 == 0 {
+                        new_pos = 0;
+                        new_is_right_tape = true;
+                    } else {
+                        new_pos = loc.0 - 1;
+                        new_is_right_tape = false;
+                    }
                 }
             }
-            Direction::None => new_loc = loc,
+            Direction::None => {
+                new_pos = loc.0 ;
+                new_is_right_tape = loc.1;
+            },
         }
 
-        for _ in tape.len() - 1..new_loc {
-            tape.push(0);
-        }
-
-        return Some((new_state, new_loc));
+        return Some((new_state, (new_pos, new_is_right_tape)));
     }
 
     return None;
 }
 
-fn fold_idx(pos: usize, len: usize) -> usize {
-    let center = len / 2;
-    if pos < center {
-        return (center - pos) * 2 - 1;
-    } else {
-        return (pos - center) * 2;
-    }
-}
-
-fn unfold_idx(pos: usize, len: usize) -> usize {
-    let center = len / 2;
-    if pos % 2 == 0 {
-        return pos / 2 + center;
-    }
-    return center - (pos + 1) / 2;
-}
-
-fn fold(tape: &Vec<u64>) -> Vec<u64> {
-    let mut new_tape: Vec<u64> = Vec::new();
-    for i in 0..tape.len() {
-        new_tape.push(tape[unfold_idx(i, tape.len())])
-    }
-
-    new_tape
-}
-
-fn unfold(tape: &Vec<u64>) -> Vec<u64> {
-    let mut new_tape: Vec<u64> = Vec::new();
-    for i in 0..tape.len() {
-        new_tape.push(tape[fold_idx(i, tape.len())]);
-    }
-
-    new_tape
-}
 
 pub fn run(rules: &Vec<Rule>, init_tape: Option<Vec<u64>>, print_tape: bool) {
     let mut state = 0;
-    let mut tape: Vec<u64>;
-    let mut loc: usize;
+    let mut tape_l: Vec<u64> = Vec::new();
+    let mut tape_r: Vec<u64>;
+    let mut loc: (usize, bool) = (0, true);
 
     match init_tape {
         Some(t) => {
-            tape = fold(&t);
-            loc = fold_idx(0, t.len());
+            tape_r = t;
         }
         None => {
-            tape = Vec::new();
-            tape.push(0);
-            loc = 0;
+            tape_r = Vec::new();
+            tape_r.push(0);
         }
     }
 
     let rulemap = build_rulemap(rules);
 
     if print_tape {
-        print_state(state, &unfold(&tape), unfold_idx(loc, tape.len()));
+        let joined_tape = [tape_l.iter().copied().rev().collect(), tape_r.clone()].concat();
+        let mut pos = tape_l.len();
+        if loc.1 {
+            pos += loc.0;
+        } else {
+            pos -= loc.0 + 1;
+        }
+        print_state(state, &joined_tape, pos);
     }
 
     loop {
-        match apply_rule(state, &mut tape, loc, &rulemap) {
+        match apply_rule(state, &mut tape_l, &mut tape_r, loc, &rulemap) {
             None => break,
             Some((new_state, new_loc)) => {
                 state = new_state;
@@ -156,7 +152,14 @@ pub fn run(rules: &Vec<Rule>, init_tape: Option<Vec<u64>>, print_tape: bool) {
         }
 
         if print_tape {
-            print_state(state, &unfold(&tape), unfold_idx(loc, tape.len()));
+            let joined_tape = [tape_l.iter().copied().rev().collect(), tape_r.clone()].concat();
+            let mut pos = tape_l.len();
+            if loc.1 {
+                pos += loc.0;
+            } else {
+                pos -= loc.0 + 1;
+            }
+            print_state(state, &joined_tape, pos);
         }
     }
 }
