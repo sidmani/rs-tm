@@ -1,5 +1,6 @@
 mod machine;
 mod verify;
+mod util;
 use machine::{Direction, Rule};
 use Direction::{Right, Left, None};
 

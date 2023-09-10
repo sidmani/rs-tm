@@ -1,3 +1,4 @@
+use crate::util::print_state;
 use std::collections::HashMap;
 
 #[derive(PartialEq, Eq)]
@@ -120,18 +121,6 @@ fn unfold(tape: &Vec<u64>) -> Vec<u64> {
     }
 
     new_tape
-}
-
-pub fn print_state(state: u64, tape: &Vec<u64>, loc: usize) {
-    let mut text = format!("\x1b[92m[{}]\x1b[0m", state);
-    for i in 0..tape.len() {
-        if i == loc {
-            text = format!("{} \x1b[91m\x1b[1m{}\x1b[0m", text, tape[i]);
-        } else {
-            text = format!("{} {}", text, tape[i]);
-        }
-    }
-    println!("{}", text);
 }
 
 pub fn run(rules: &Vec<Rule>, init_tape: Option<Vec<u64>>, print_tape: bool) {
