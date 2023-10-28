@@ -58,48 +58,48 @@ fn apply_rule(
         } else {
             tape_l[loc.0] = rule.1;
         }
-
-        match &rule.2 {
-            Direction::Left => {
-                if loc.1 {
-                    if loc.0 == 0 {
-                        new_pos = 0;
-                        new_is_right_tape = false;
-                        if tape_l.len() == 0 {
-                            tape_l.push(0);
-                        }
-                    } else {
-                        new_pos = loc.0 - 1;
-                        new_is_right_tape = true;
-                    }
-                } else {
-                    new_pos = loc.0 + 1;
-                    new_is_right_tape = false;
-                    if new_pos >= tape_l.len() {
-                        tape_l.push(0);
-                    }
+        match (&rule.2, loc.0, loc.1) {
+            (Direction::Left, 0, true) => {
+                // moving left from edge of right tape
+                new_pos = 0;
+                new_is_right_tape = false;
+                if tape_l.len() == 0 {
+                    tape_l.push(0);
                 }
             }
-            Direction::Right => {
-                if loc.1 {
-                    new_pos = loc.0 + 1;
-                    new_is_right_tape = true;
-                    if new_pos >= tape_r.len() {
-                        tape_r.push(0);
-                    }
-                } else {
-                    if loc.0 == 0 {
-                        new_pos = 0;
-                        new_is_right_tape = true;
-                    } else {
-                        new_pos = loc.0 - 1;
-                        new_is_right_tape = false;
-                    }
+            (Direction::Left, k, true) => {
+                // moving left on right tape
+                new_pos = k - 1;
+                new_is_right_tape = true;
+            }
+            (Direction::Left, k, false) => {
+                new_pos = k + 1;
+                new_is_right_tape = false;
+                if tape_l.len() == new_pos {
+                    tape_l.push(0);
                 }
             }
-            Direction::None => {
-                new_pos = loc.0;
-                new_is_right_tape = loc.1;
+            (Direction::Right, 0, false) => {
+                // moving right from edge of left tape
+                new_pos = 0;
+                new_is_right_tape = true;
+            }
+            (Direction::Right, k, false) => {
+                // moving right on left tape
+                new_pos = k - 1;
+                new_is_right_tape = false;
+            }
+            (Direction::Right, k, true) => {
+                // moving right on right tape
+                new_pos = k + 1;
+                new_is_right_tape = true;
+                if tape_r.len() == new_pos {
+                    tape_r.push(0);
+                }
+            }
+            (Direction::None, k, r) => {
+                new_pos = k;
+                new_is_right_tape = r;
             }
         }
 
@@ -133,6 +133,7 @@ pub fn run(
         }
         print_state(state, &joined_tape, pos);
     }
+
     while let Some((new_state, new_loc)) =
         apply_rule(state, &mut tape_l, &mut tape_r, loc, &rule_arr, num_symbols)
     {
