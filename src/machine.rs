@@ -10,17 +10,19 @@ pub enum Direction {
 
 pub fn build_rule_arr(
     rules: &Vec<(u64, u64, u64, u64, Direction)>,
-    num_states: u64,
-    num_symbols: u64,
 ) -> Vec<Option<(u64, u64, Direction)>> {
     let mut rulemap = HashMap::new();
+    let mut max_state = 0;
+    let mut max_sym = 0;
     for rule in rules {
+        max_state = max_state.max(rule.0);
+        max_sym = max_sym.max(rule.1);
         rulemap.insert((rule.0, rule.1), rule);
     }
 
     let mut result = Vec::new();
-    for i in 0..num_states {
-        for j in 0..num_symbols {
+    for i in 0..max_state + 1 {
+        for j in 0..max_sym + 1 {
             result.push(if let Some(rule) = rulemap.get(&(i, j)) {
                 Some((rule.2, rule.3, rule.4.clone()))
             } else {
@@ -131,15 +133,11 @@ pub fn run(
         }
         print_state(state, &joined_tape, pos);
     }
-
-    loop {
-        match apply_rule(state, &mut tape_l, &mut tape_r, loc, &rule_arr, num_symbols) {
-            None => break,
-            Some((new_state, new_loc)) => {
-                state = new_state;
-                loc = new_loc;
-            }
-        }
+    while let Some((new_state, new_loc)) =
+        apply_rule(state, &mut tape_l, &mut tape_r, loc, &rule_arr, num_symbols)
+    {
+        state = new_state;
+        loc = new_loc;
 
         if print_tape {
             let joined_tape = [tape_l.iter().copied().rev().collect(), tape_r.clone()].concat();

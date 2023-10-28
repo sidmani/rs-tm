@@ -7,7 +7,6 @@ use Direction::{Left, None, Right};
 fn main() {
     // A, B, 1, 0, X, Y, Z
     // 3, 1, 2, 0, 4, 5, 6
-
     let rules = vec![
         // Q0
         (0, 3, 0, 3, Right),
@@ -37,6 +36,6 @@ fn main() {
     ];
 
     let init_tape = vec![3, 2, 2, 2, 1];
-    let rule_arr = build_rule_arr(&rules, 6, 7);
+    let rule_arr = build_rule_arr(&rules);
     machine::run(&rule_arr, Some(init_tape), 7, true);
 }
