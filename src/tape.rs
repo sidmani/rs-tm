@@ -1,5 +1,3 @@
-use crate::util::print_state;
-
 pub struct BiInfiniteTape {
     left: Vec<u64>,
     right: Vec<u64>,
@@ -54,14 +52,31 @@ impl BiInfiniteTape {
             self.right.push(0);
         }
     }
+}
 
-    pub fn print_state(&self, state: u64) {
-        let joined_tape = [
-            self.left.iter().copied().rev().collect(),
-            self.right.clone(),
-        ]
-        .concat();
-        let pos = self.left.len() as isize + self.head;
-        print_state(state, &joined_tape, pos as usize);
+impl ToString for BiInfiniteTape {
+    fn to_string(&self) -> String {
+        let mut result = String::new();
+
+        for i in (0..self.left.len()).rev() {
+            let text;
+            if self.head < 0 && i == -self.head as usize - 1 {
+                text = format!("\x1b[91m\x1b[1m{}\x1b[0m ", self.left[i]);
+            } else {
+                text = format!("{} ", self.left[i]);
+            }
+            result.push_str(&text);
+        }
+        for i in 0..self.right.len() {
+            let text;
+            if self.head >= 0 && i == self.head as usize {
+                text = format!("\x1b[91m\x1b[1m{}\x1b[0m ", self.right[i]);
+            } else {
+                text = format!("{} ", self.right[i]);
+            }
+            result.push_str(&text)
+        }
+
+        result
     }
 }

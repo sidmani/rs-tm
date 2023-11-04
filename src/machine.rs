@@ -54,10 +54,16 @@ fn apply_rule(
             }
             Direction::None => {}
         }
-        return Some(new_state);
+        Some(new_state)
+    } else {
+        None
     }
+}
 
-    None
+fn print_state(state: u64, tape_str: &str) {
+    let mut text = format!("\x1b[92m[{}]\x1b[0m ", state);
+    text.push_str(tape_str);
+    println!("{}", text);
 }
 
 pub fn run(
@@ -69,9 +75,9 @@ pub fn run(
     let mut state = 0;
     let mut tape = BiInfiniteTape::create(init_tape);
 
-    tape.print_state(state);
+    print_state(state, &tape.to_string());
     while let Some(new_state) = apply_rule(state, &mut tape, rule_arr, num_symbols) {
         state = new_state;
-        tape.print_state(state);
+        print_state(state, &tape.to_string());
     }
 }
