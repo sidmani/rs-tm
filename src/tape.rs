@@ -5,12 +5,10 @@ pub struct BiInfiniteTape {
 }
 
 impl BiInfiniteTape {
-    pub fn create(init: Option<Vec<u64>>) -> BiInfiniteTape {
-        let right = if let Some(t) = init { t } else { vec![0] };
-        let left = Vec::new();
+    pub fn new(init: Option<Vec<u64>>) -> BiInfiniteTape {
         BiInfiniteTape {
-            left,
-            right,
+            left: Vec::new(),
+            right: if let Some(t) = init { t } else { vec![0] },
             head: 0,
         }
     }

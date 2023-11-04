@@ -43,37 +43,30 @@ fn apply_rule(
     }
 
     if let Some(rule) = &rule_arr[rule_idx] {
-        let new_state = rule.0;
         tape.set_at_head(rule.1);
         match &rule.2 {
-            Direction::Left => {
-                tape.move_left();
-            }
-            Direction::Right => {
-                tape.move_right();
-            }
+            Direction::Left => tape.move_left(),
+            Direction::Right => tape.move_right(),
             Direction::None => {}
         }
-        Some(new_state)
+        Some(rule.0)
     } else {
         None
     }
 }
 
 fn print_state(state: u64, tape_str: &str) {
-    let mut text = format!("\x1b[92m[{}]\x1b[0m ", state);
-    text.push_str(tape_str);
-    println!("{}", text);
+    println!("\x1b[92m[{}]\x1b[0m {}", state, tape_str);
 }
 
 pub fn run(
     rule_arr: &Vec<Option<(u64, u64, Direction)>>,
     init_tape: Option<Vec<u64>>,
     num_symbols: u64,
-    print_tape: bool,
+    log: bool,
 ) {
     let mut state = 0;
-    let mut tape = BiInfiniteTape::create(init_tape);
+    let mut tape = BiInfiniteTape::new(init_tape);
 
     print_state(state, &tape.to_string());
     while let Some(new_state) = apply_rule(state, &mut tape, rule_arr, num_symbols) {
