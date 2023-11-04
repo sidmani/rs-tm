@@ -1,4 +1,5 @@
 mod machine;
+mod tape;
 mod util;
 // mod verify;
 use machine::{build_rule_arr, Direction};
